@@ -1,7 +1,3 @@
-CREATE DATABASE Payslip_db;
-
-\c Payslip_db
-
 
 CREATE TABLE IF NOT EXISTS payslips (
     id SERIAL PRIMARY KEY,

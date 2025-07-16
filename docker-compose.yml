@@ -1,74 +1,48 @@
-version: '3.8'
-
 services:
-  employee_portal:
-    container_name: attendance_employee_portal
-    build: ./Employee_Portal
-    ports:
-      - "8164:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - app-network
-
-  hr_portal:
-    container_name: attendance_hr_portal
-    build: ./HR_Portal
-    ports:
-      - "8165:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - app-network
-
-  backend:
-    container_name: attendance_backend
-    build: ./Backend
-    ports:
-      - "3098:3098"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      - PGUSER=postgres
-      - PGPASSWORD=admin123
-      - PGDATABASE=employee_attendance
-      - PGHOST=postgres
-      - PGPORT=5432
-      - NODE_ENV=production
-    healthcheck:
-      test: ["CMD", "node", "healthcheck.js"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - app-network
-
   postgres:
-    container_name: attendance_postgres
     image: postgres:14
+    container_name: payslip_postgres
     ports:
-      - "5098:5432"
+      - "5100:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin123
-      POSTGRES_DB: employee_attendance
+      POSTGRES_DB: employee_portal
     volumes:
-      - pgdata_attendance:/var/lib/postgresql/data
+      - pgdata_payslip:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app-network
+
+  backend:
+    build: ./Backend
+    container_name: payslip_backend
+    ports:
+      - "3100:3100"
+    depends_on:
+      - postgres
+    environment:
+      DB_USER: postgres
+      DB_PASSWORD: admin123
+      DB_NAME: employee_portal
+      DB_HOST: postgres
+      DB_PORT: 5432
+      PORT: 3100
+    restart: always
+
+  employee-payslip:
+    build: ./Employee_Payslip
+    container_name: employee_payslip_ui
+    ports:
+      - "8168:80"
+    depends_on:
+      - backend
+
+  hr-payslip:
+    build: ./HR_Payslip
+    container_name: hr_payslip_ui
+    ports:
+      - "8169:80"
+    depends_on:
+      - backend
 
 volumes:
-  pgdata_attendance:
-
-networks:
-  app-network:
-    driver: bridge
+  pgdata_payslip:
